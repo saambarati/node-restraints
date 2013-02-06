@@ -1,0 +1,21 @@
+{
+  "name": "node-restraints",
+  "version": "0.0.0",
+  "description": "restraint propagation",
+  "main": "parser.js",
+  "scripts": {
+    "test": "node ./test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saambarati/node-restraints.git"
+  },
+  "keywords": [
+    "restraint",
+    "restraints",
+    "propagation",
+    "math"
+  ],
+  "author": "saam barati",
+  "license": "MIT"
+}
