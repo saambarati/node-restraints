@@ -16,7 +16,7 @@ function parseStatement(originalInput) {
 
   function parse(input) {
     //reverse pemdas -> sadmep
-    //find the least precedent order of operation first, they will be our top nodes
+    //find the least precedent order of operation first, they will be our top nodes in our recursive descending parser
     var operation
 
     if (isSubtraction(input)) {                   //s
@@ -60,7 +60,7 @@ function parseStatement(originalInput) {
   originalInput = originalInput.replace(/\s/g, '') //remove white space
   lh = parse(originalInput.split('=')[0])
   rh = parse(originalInput.split('=')[1])
-  restraints.equate(lh, rh) //lh+0=rh
+  restraints.equate(lh, rh) //lh=rh
 
   //interface to outside
   function set(name, val) {
