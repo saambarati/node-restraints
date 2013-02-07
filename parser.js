@@ -25,7 +25,7 @@ function makeInterface(equation) {
         return prop in hash
       })
       .forEach(function(prop) {
-        hash[prop].value = setters[prop]
+        setVariableInHash(prop, hash, setters[prop])
       })
 
     updatePropertiesOnSet()
@@ -34,7 +34,7 @@ function makeInterface(equation) {
   function updatePropertiesOnSet() { //attach hash properties to set
     propNames(hash)
       .forEach(function(prop) {
-        set[prop] = hash[prop].value
+        set[prop] = getVariableValueInHash(prop, hash)
       })
   }
 
@@ -47,12 +47,12 @@ function makeInterface(equation) {
 module.exports = makeInterface
 
 
-var connections = {
+var restraintFunctions = {
    division : restraints.divider
   , multiplication : restraints.multiplier
   , addition : restraints.adder
   , subtraction : restraints.subtractor
-  , exponent : restraints.exponent
+  , exponentiation : restraints.exponent
 }
 function parseStatement(originalInput) {
   var hash = {}
@@ -75,19 +75,21 @@ function parseStatement(originalInput) {
     } else if (isMultiplication(input)) {         //m
       operation = 'multiplication'
     } else if (isExponent(input)) {               //e
-      operation = 'exponent'
+      operation = 'exponentiation'
     } else if (isParen(input)) {                  //p
       return parse(textOfParen(input))
     } else if (isConstant(input)) { //no need to recurse further. these our the primitives.
       return restraints.constant(constantValue(input))
     } else if (isVariable(input)) { //no need to recurse further. these our the primitives.
       var vName = variableName(input)
+        , ret = addVariableToHash(vName, hash)
+
       debug('parsed variable named -> ' + vName)
-      hash[vName] = restraints.makeConnector()
       debug(function() {
-        restraints.watch(hash[vName], 'debugging variable ' + vName) //this is for testing
+        restraints.watch(ret, 'debugging variable ' + vName) //this is for testing
       })
-      return hash[vName]
+
+      return ret
     } else {
       throw new Error('unrecognized input type to parse function : ' + input)
     }
@@ -101,7 +103,7 @@ function parseStatement(originalInput) {
     rh = rightHand(operation, input)
     debug('lh -> ' + lh)
     debug('rh -> ' + rh)
-    connectionFunc = connections[operation]
+    connectionFunc = restraintFunctions[operation]
     connectionFunc(parse(lh), parse(rh), topNode)
     return topNode
   }
@@ -110,7 +112,6 @@ function parseStatement(originalInput) {
   lh = parse(originalInput.split('=')[0])
   rh = parse(originalInput.split('=')[1])
   restraints.equate(lh, rh) //lh=rh
-
 
   return hash
 }
@@ -121,7 +122,7 @@ var operationCharacters = {
   , multiplication : '*'
   , addition : '+'
   , subtraction : '-'
-  , exponent : '^'
+  , exponentiation : '^'
 }
 
 function leftHand(operation, input) {
@@ -131,23 +132,23 @@ function rightHand(operation, input) {
   return input.slice(findNextIndex(operationCharacters[operation], input) + 1)
 }
 
-function isOpGeneric(op, input) {
-  return findNextIndex(op, input) !== -1
+function isOpGeneric(type, input) {
+  return findNextIndex(operationCharacters[type], input) !== -1
 }
 function isSubtraction(input) {
-  return isOpGeneric(operationCharacters.subtraction, input)
+  return isOpGeneric('subtraction', input)
 }
 function isAddition(input) {
-  return isOpGeneric(operationCharacters.addition, input)
+  return isOpGeneric('addition', input)
 }
 function isDivision(input) {
-  return isOpGeneric(operationCharacters.division, input)
+  return isOpGeneric('division', input)
 }
 function isMultiplication(input) {
-  return isOpGeneric(operationCharacters.multiplication, input)
+  return isOpGeneric('multiplication', input)
 }
 function isExponent(input) {
-  return isOpGeneric(operationCharacters.exponent, input)
+  return isOpGeneric('exponentiation', input)
 }
 function isParen(input) {
   return input[0] === '('
@@ -169,6 +170,23 @@ function isVariable(input) {
 }
 function variableName(input) {
   return input
+}
+
+//dealing w/ our hash
+function addVariableToHash(name, hash) {
+  var conn = restraints.makeConnector()
+  if (!hash[name]) hash[name] = []
+  hash[name].push(conn)
+
+  return conn
+}
+function setVariableInHash(name, hash, val) {
+  hash[name].forEach(function(connector) {
+    connector.value = val
+  })
+}
+function getVariableValueInHash(name, hash) {
+  return hash[name][0].value //all values should be same
 }
 
 function findNextIndex(searchingFor, input) { //ignores parentheses

@@ -1,6 +1,6 @@
 {
   "name": "restraints",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "restraint propagation",
   "main": "./parser.js",
   "scripts": {

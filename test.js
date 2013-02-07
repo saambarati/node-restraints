@@ -1,4 +1,5 @@
 var parse = require('./parser')
+  , assert = require('assert')
 
 var f = parse("10 + y = 10 + 10 + 10 + x + 10 + 10")
 f('y', 100)
@@ -28,16 +29,32 @@ f('x', 9)
 f('forget')
 console.log('\n\n\n')
 var f = parse('x^y = z')
-f({x : 10, y : 2})
+f({x:10, y:2})
 console.log('z ----> ' + f.z)
 f('forget')
-console.log('y ----> ' + f.y)
+assert(!f.y)
 f({x : 2, z : 8})
+assert(f.y === 3)
 console.log('y ----> ' + f.y)
 
 
+var f = parse('2*x^(1/2) = z + 10 - 5')
+f({x : 4})
+assert(f.z === -1)
+console.log('z ----> ' + f.z)
 
-//console.log('idx : ' + parse.findNextIndex('-', '10-y'))
-//var idx = parse.findNextIndex('-', '10-y')
-//console.log('10-y'.slice(0, idx))
-//console.log('10-y'.slice(idx+1))
+var f = parse('y = x^(1/2)')
+f({x : -4})
+assert(!f.y) //NaN
+
+var f = parse('y = y + x')
+f({y : 10})
+console.log('x should be zero ---> ' + f.x)
+assert(f.x === 0)
+
+var f = parse('y = .5*y + x')
+f({y : 10})
+assert(f.x === 5)
+console.log(f.x)
+
+

@@ -1,5 +1,8 @@
 #restraints
 
+## use
+`npm install restraints`
+
 ## example - Fahrenheit to Celcius -- Celcius to Farhenheit
 
     var restraints = require('restraints')
