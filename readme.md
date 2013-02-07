@@ -1,6 +1,6 @@
 #restraints
 
-## examples - Fahrenheit to Celcius -- Celcius to Farhenheit
+## example - Fahrenheit to Celcius -- Celcius to Farhenheit
 
     var restraints = require('restraints')
        , converter = restraints('9 * c = 5 * (f - 32)')
@@ -8,7 +8,7 @@
 
     converter('c', 21) //or converter({c : 21})
     converter.f === 69.8
-    converter('c', null) //forget value
+    converter('forget') //all values are forgotten
     converter('f', 80)
     converter.c === 26.66666
 
@@ -20,6 +20,7 @@ restraints is useful for creating a set of mathematical equations:
     equation.z === 100 //10^2=100
 
     equation('forget') //all values are forgetten
+
     equation({x : 2, z : 8})
     equation.y === 3 //2^3=8
 
