@@ -1,10 +1,10 @@
 var restraints = require('./restraints')
   , debug = require('./debug')
+  , propNames = Object.getOwnPropertyNames
 
 function makeInterface(equation) {
   //interface to module
-  var propNames = Object.getOwnPropertyNames
-    , hash = parseStatement(equation)
+  var hash = parseStatement(equation)
 
   function set(propOrHash, val) {
     if (propOrHash === 'forget') {
@@ -20,13 +20,7 @@ function makeInterface(equation) {
     } else {
       setters = propOrHash //it's a hash
     }
-    propNames(setters)
-      .filter(function(prop) { //only properties that hash has
-        return prop in hash
-      })
-      .forEach(function(prop) {
-        setVariableInHash(prop, hash, setters[prop])
-      })
+    setVariableInHash(hash, setters)
 
     updatePropertiesOnSet()
   }
@@ -173,6 +167,7 @@ function variableName(input) {
 }
 
 //dealing w/ our hash
+//each property is an array of connectors
 function addVariableToHash(name, hash) {
   var conn = restraints.makeConnector()
   if (!hash[name]) hash[name] = []
@@ -180,16 +175,23 @@ function addVariableToHash(name, hash) {
 
   return conn
 }
-function setVariableInHash(name, hash, val) {
-  hash[name].forEach(function(connector) {
-    connector.value = val
-  })
+function setVariableInHash(hash, newVals) {
+  propNames(newVals)
+    .filter(function(prop) { //only properties that hash has
+      return prop in hash
+    })
+    .forEach(function(prop) {
+      var val = newVals[prop]
+      hash[prop].forEach(function(connector) {
+        connector.value = val
+      })
+    })
 }
 function getVariableValueInHash(name, hash) {
   return hash[name][0].value //all values should be same
 }
 
-function findNextIndex(searchingFor, input) { //ignores parentheses
+function findNextIndex(searchingFor, input) { //doesn't capture when inside parentheses
   var idx = 0
   , lParen = 0
   , rParen = 0
