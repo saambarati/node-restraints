@@ -1,6 +1,50 @@
-
 var restraints = require('./restraints')
   , debug = require('./debug')
+
+function makeInterface(equation) {
+  //interface to module
+  var propNames = Object.getOwnPropertyNames
+    , hash = parseStatement(equation)
+
+  function set(propOrHash, val) {
+    if (propOrHash === 'forget') {
+      hash = parseStatement(equation) //forget old values
+      updatePropertiesOnSet()
+      return
+    }
+
+    var setters
+    if (val) {
+      setters = {}
+      setters[propOrHash] = val //its a single setter
+    } else {
+      setters = propOrHash //it's a hash
+    }
+    propNames(setters)
+      .filter(function(prop) { //only properties that hash has
+        return prop in hash
+      })
+      .forEach(function(prop) {
+        hash[prop].value = setters[prop]
+      })
+
+    updatePropertiesOnSet()
+  }
+
+  function updatePropertiesOnSet() { //attach hash properties to set
+    propNames(hash)
+      .forEach(function(prop) {
+        set[prop] = hash[prop].value
+      })
+  }
+
+  set.watch = function(prop, string) {
+    restraints.watch(hash[prop], string || equation)
+  }
+
+  return set
+}
+module.exports = makeInterface
 
 
 var connections = {
@@ -8,6 +52,7 @@ var connections = {
   , multiplication : restraints.multiplier
   , addition : restraints.adder
   , subtraction : restraints.subtractor
+  , exponent : restraints.exponent
 }
 function parseStatement(originalInput) {
   var hash = {}
@@ -17,6 +62,8 @@ function parseStatement(originalInput) {
   function parse(input) {
     //reverse pemdas -> sadmep
     //find the least precedent order of operation first, they will be our top nodes in our recursive descending parser
+    //this is how the parser performs its transformations
+    //  3 + 4 * x = 10 + y -> ((3) + ((4) * (x))) = ((10) + (y)) -> each set of parens indicates another call to parse
     var operation
 
     if (isSubtraction(input)) {                   //s
@@ -37,7 +84,9 @@ function parseStatement(originalInput) {
       var vName = variableName(input)
       debug('parsed variable named -> ' + vName)
       hash[vName] = restraints.makeConnector()
-      restraints.watch('debugging variable ' + vName, hash[vName]) //this is for testing
+      debug(function() {
+        restraints.watch(hash[vName], 'debugging variable ' + vName) //this is for testing
+      })
       return hash[vName]
     } else {
       throw new Error('unrecognized input type to parse function : ' + input)
@@ -62,16 +111,9 @@ function parseStatement(originalInput) {
   rh = parse(originalInput.split('=')[1])
   restraints.equate(lh, rh) //lh=rh
 
-  //interface to outside
-  function set(name, val) {
-    hash[name].value = val
-  }
-  set.hash = hash
-  return set
-}
-parseStatement.findNextIndex = findNextIndex
-module.exports = parseStatement
 
+  return hash
+}
 
 //functions to identify syntax
 var operationCharacters = {

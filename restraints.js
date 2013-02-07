@@ -50,6 +50,30 @@ function divider(d1, d2, div) { //d1/d2=div -> d2*div=d1
 }
 exports.divider = divider
 
+function exponent(base, power, result) {
+  var pow = Math.pow
+    , ln = Math.log
+  function update(connector) {
+    if (power.hasValue && power.value === 0 && base.value !== 0) { //base^0 = 1
+      result.value = 1
+    } else if (base.hasValue && base.value === 0) {
+      result.value = 0
+    } else if (base.hasValue && power.hasValue) {   //base^power = result
+      result.value = pow(base.value, power.value)
+    } else if (result.hasValue && power.hasValue) { //base = result^(1/power)
+      base.value = pow(result.value, 1/power.value)
+    } else if (base.hasValue && result.hasValue) {  //power = log base 'base' w/ argument result
+      //log change of base formula
+      power.value = ln(result.value)/ln(base.value)
+    }
+  }
+
+  var connectors = [base, power, result]
+  connect(connectors, 'update', update)
+  connect(connectors, 'forgot', makeForgot(connectors))
+}
+exports.exponent = exponent
+
 function makeForgot(connectors) {
   function forgot(conn) {
     connectors.filter(function (itm) {
@@ -144,7 +168,7 @@ function makeConnector() {
 }
 exports.makeConnector = makeConnector
 
-function watch(name, c) {
+function watch(c, name) {
   function print() {
     if (c.value === null) return
     console.log('connector: ' + name + '.  value: ' + c.value)
@@ -154,34 +178,9 @@ function watch(name, c) {
 }
 exports.watch = watch
 
-
-var f = makeConnector()
-  , c = makeConnector()
-watch('fahrenheit', f)
-watch('celsius', c)
-
-//
-
-function celsiusFahrenheitConverter(c, f) {
-  // 9*c = bridge = 5 * (f - 32)
-  var c9 = constant(9)
-    , c5 = constant(5)
-    , c32 = constant(32)
-    , sub = makeConnector()
-    , bridge = makeConnector()
-
-  subtractor(f, c32, sub)
-  multiplier(c9, c, bridge)
-  multiplier(c5, sub, bridge)
+function isEven(n) {
+  return n % 2 === 0
 }
-
-celsiusFahrenheitConverter(c, f)
-c.value = 0
-c.forget()
-f.value = 75
-f.forget()
-c.value = 25
-
 
 
 

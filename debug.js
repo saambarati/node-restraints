@@ -1,4 +1,7 @@
 
-module.exports = function debug () {
-  if (process.env.DEBUG) console.log.apply(console, ['Restraints DEBUG :'].concat([].slice.call(arguments)))
+module.exports = function debug(maybeFunc) {
+  if (process.env.DEBUG) {
+    if (typeof maybeFunc === 'function') maybeFunc()
+    else console.log.apply(console, ['Restraints DEBUG :'].concat([].slice.call(arguments)))
+  }
 }
