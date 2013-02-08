@@ -1,6 +1,7 @@
 var restraints = require('./restraints')
   , debug = require('./debug')
   , propNames = Object.getOwnPropertyNames
+  , assert = require('assert')
 
 function makeInterface(equation) {
   //interface to module
@@ -48,8 +49,9 @@ var restraintFunctions = {
   , subtraction : restraints.subtractor
   , exponentiation : restraints.exponent
 }
+
 function parseStatement(originalInput) {
-  var hash = {}
+  var hash = makeHash()
     , lh
     , rh
 
@@ -76,14 +78,14 @@ function parseStatement(originalInput) {
       return restraints.constant(constantValue(input))
     } else if (isVariable(input)) { //no need to recurse further. these our the primitives.
       var vName = variableName(input)
-        , ret = addVariableToHash(vName, hash)
+        , connector = addVariableToHash(vName, hash)
 
       debug('parsed variable named -> ' + vName)
       debug(function() {
-        restraints.watch(ret, 'debugging variable ' + vName) //this is for testing
+        restraints.watch(connector, 'debugging variable ' + vName) //this is for testing
       })
 
-      return ret
+      return connector
     } else {
       throw new Error('unrecognized input type to parse function : ' + input)
     }
@@ -110,7 +112,7 @@ function parseStatement(originalInput) {
   return hash
 }
 
-//functions to identify syntax
+//identifiers of mathematical operations
 var operationCharacters = {
     division : '/'
   , multiplication : '*'
@@ -118,14 +120,22 @@ var operationCharacters = {
   , subtraction : '-'
   , exponentiation : '^'
 }
-
+//function that define the 'syntax' of our mini arithmetic language
 function leftHand(operation, input) {
-  return input.slice(0, findNextIndex(operationCharacters[operation], input))
+  var idx = findNextIndex(operationCharacters[operation], input)
+  debug(function() {
+    assert(idx !== -1)
+  })
+  return input.slice(0, idx)
 }
 function rightHand(operation, input) {
-  return input.slice(findNextIndex(operationCharacters[operation], input) + 1)
+  var idx = findNextIndex(operationCharacters[operation], input)
+  debug(function() {
+    assert(idx !== -1)
+  })
+  return input.slice(idx + 1)
 }
-
+//defining our syntax
 function isOpGeneric(type, input) {
   return findNextIndex(operationCharacters[type], input) !== -1
 }
@@ -166,8 +176,9 @@ function variableName(input) {
   return input
 }
 
-//dealing w/ our hash
+//dealing w/ our hash data structure
 //each property is an array of connectors
+function makeHash() { return {} }
 function addVariableToHash(name, hash) {
   var conn = restraints.makeConnector()
   if (!hash[name]) hash[name] = []
@@ -208,14 +219,4 @@ function findNextIndex(searchingFor, input) { //doesn't capture when inside pare
 
   return -1
 }
-
-
-
-
-
-
-
-
-
-
 

@@ -1,8 +1,6 @@
 var EventEmitter = require('events').EventEmitter
   , debug = require('./debug')
 
-
-
 function adder(a1, a2, sum) { //a1 + a2 = sum
   function update(connector) {
     var v, toSet
@@ -179,21 +177,4 @@ function watch(c, name) {
 
 }
 exports.watch = watch
-
-function isEven(n) {
-  return n % 2 === 0
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
