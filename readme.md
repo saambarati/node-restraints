@@ -9,10 +9,10 @@
        , converter = restraints('9 * c = 5 * (f - 32)')
     //when either the value for 'c' or 'f' are updated, their value will be attached to converter
 
-    converter('c', 21) //or converter({c : 21})
+    converter({c : 21})
     converter.f === 69.8
     converter('forget') //all values are forgotten
-    converter('f', 80)
+    converter({f : 80})
     converter.c === 26.66666
 
 ## another example

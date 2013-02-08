@@ -7,20 +7,13 @@ function makeInterface(equation) {
   //interface to module
   var hash = parseStatement(equation)
 
-  function set(propOrHash, val) {
-    if (propOrHash === 'forget') {
+  function set(setters) {
+    if (setters === 'forget') {
       hash = parseStatement(equation) //forget old values
       updatePropertiesOnSet()
       return
     }
 
-    var setters
-    if (val) {
-      setters = {}
-      setters[propOrHash] = val //its a single setter
-    } else {
-      setters = propOrHash //it's a hash
-    }
     setVariableInHash(hash, setters)
 
     updatePropertiesOnSet()
