@@ -5,109 +5,106 @@ var restraints = require('./restraints')
 
 function makeInterface(equation) {
   //interface to module
-  var hash = parseStatement(equation)
+  var hash = parseStatementIntoHash(equation)
 
-  function set(setters) {
+  function moduleInterface(setters) {
     if (setters === 'forget') {
-      hash = parseStatement(equation) //forget old values
-      updatePropertiesOnSet()
+      hash = parseStatementIntoHash(equation) //forget old values
+      updatePropertiesOnInterface()
       return
     }
 
     setVariableInHash(hash, setters)
-
-    updatePropertiesOnSet()
+    updatePropertiesOnInterface()
   }
 
-  function updatePropertiesOnSet() { //attach hash properties to set
+  function updatePropertiesOnInterface() { //attach hash properties to set
     propNames(hash)
       .forEach(function(prop) {
-        set[prop] = getVariableValueInHash(prop, hash)
+        moduleInterface[prop] = getVariableValueInHash(prop, hash)
       })
   }
 
-  set.watch = function(prop, string) {
+  moduleInterface.watch = function(prop, string) {
     restraints.watch(hash[prop], string || equation)
   }
 
-  return set
+  return moduleInterface
 }
 module.exports = makeInterface
 
+function parseStatementIntoHash(originalInput) {
+  var hash = makeHash()
+    , lh
+    , rh
+
+  originalInput = originalInput.replace(/\s/g, '') //remove white space
+  parse(originalInput, hash)
+  return hash
+}
 
 var restraintFunctions = {
-   division : restraints.divider
+    division : restraints.divider
   , multiplication : restraints.multiplier
   , addition : restraints.adder
   , subtraction : restraints.subtractor
   , exponentiation : restraints.exponent
 }
 
-function parseStatement(originalInput) {
-  var hash = makeHash()
+function parse(input, hash) {
+  //reverse pemdas -> sadmep
+  //find the least precedent order of operation first, they will be our top nodes in our recursive descending parser
+  //this is how the parser performs its transformations
+  //  3 + 4 * x = 10 + y -> ((3) + ((4) * (x))) = ((10) + (y)) -> each set of parens indicates another call to parse
+  var operation
+  if (isEquation(input))  {
+    return equateLhToRh(input, hash)
+  } else if (isSubtraction(input)) {            //s
+    operation = 'subtraction'
+  } else if (isAddition(input)) {               //a
+    operation = 'addition'
+  } else if (isDivision(input)) {               //d
+    operation = 'division'
+  } else if (isMultiplication(input)) {         //m
+    operation = 'multiplication'
+  } else if (isExponentiation(input)) {         //e
+    operation = 'exponentiation'
+  } else if (isParen(input)) {                  //p
+    return parse(textOfParen(input), hash)
+  } else if (isConstant(input)) { //no need to recurse further. these our the primitives.
+    return restraints.constant(constantValue(input))
+  } else if (isVariable(input)) { //no need to recurse further. these our the primitives.
+    var vName = variableName(input)
+      , connector = addVariableToHash(vName, hash)
+
+    debug('parsed variable named -> ' + vName)
+    debug(function() {
+      restraints.watch(connector, 'debugging variable ' + vName) //this is for testing
+    })
+
+    return connector
+  } else {
+    throw new Error('unrecognized input type to parse function : ' + input)
+  }
+
+  var connectionFunc
+    , topNode = restraints.makeConnector()
     , lh
     , rh
 
-  function parse(input) {
-    //reverse pemdas -> sadmep
-    //find the least precedent order of operation first, they will be our top nodes in our recursive descending parser
-    //this is how the parser performs its transformations
-    //  3 + 4 * x = 10 + y -> ((3) + ((4) * (x))) = ((10) + (y)) -> each set of parens indicates another call to parse
-    var operation
-
-    if (isSubtraction(input)) {                   //s
-      operation = 'subtraction'
-    } else if (isAddition(input)) {               //a
-      operation = 'addition'
-    } else if (isDivision(input)) {               //d
-      operation = 'division'
-    } else if (isMultiplication(input)) {         //m
-      operation = 'multiplication'
-    } else if (isExponent(input)) {               //e
-      operation = 'exponentiation'
-    } else if (isParen(input)) {                  //p
-      return parse(textOfParen(input))
-    } else if (isConstant(input)) { //no need to recurse further. these our the primitives.
-      return restraints.constant(constantValue(input))
-    } else if (isVariable(input)) { //no need to recurse further. these our the primitives.
-      var vName = variableName(input)
-        , connector = addVariableToHash(vName, hash)
-
-      debug('parsed variable named -> ' + vName)
-      debug(function() {
-        restraints.watch(connector, 'debugging variable ' + vName) //this is for testing
-      })
-
-      return connector
-    } else {
-      throw new Error('unrecognized input type to parse function : ' + input)
-    }
-
-    var connectionFunc
-      , topNode = restraints.makeConnector()
-      , lh
-      , rh
-
-    lh = leftHand(operation, input)
-    rh = rightHand(operation, input)
-    debug('lh -> ' + lh)
-    debug('rh -> ' + rh)
-    connectionFunc = restraintFunctions[operation]
-    connectionFunc(parse(lh), parse(rh), topNode)
-    return topNode
-  }
-
-  originalInput = originalInput.replace(/\s/g, '') //remove white space
-  lh = parse(originalInput.split('=')[0])
-  rh = parse(originalInput.split('=')[1])
-  restraints.equate(lh, rh) //lh=rh
-
-  return hash
+  lh = leftHand(operation, input)
+  rh = rightHand(operation, input)
+  debug('lh -> ' + lh)
+  debug('rh -> ' + rh)
+  connectionFunc = restraintFunctions[operation]
+  connectionFunc(parse(lh, hash), parse(rh, hash), topNode)
+  return topNode
 }
 
 //identifiers of mathematical operations
 var operationCharacters = {
-    division : '/'
+    equation : '='
+  , division : '/'
   , multiplication : '*'
   , addition : '+'
   , subtraction : '-'
@@ -128,9 +125,23 @@ function rightHand(operation, input) {
   })
   return input.slice(idx + 1)
 }
+function equateLhToRh(input, hash) {
+  var eqs = input.split('=')
+  //recursively equate all branches of the equals sign
+  ;(function recur(equivalents, prevNode) {
+    if (equivalents.length === 0) return
+    var newNode = parse(equivalents[0], hash)
+    restraints.equate(prevNode, newNode)
+    recur(equivalents.slice(1), newNode) //recur after removing the first element
+  })(eqs.slice(1), parse(eqs[0], hash))
+}
+
 //defining our syntax
 function isOpGeneric(type, input) {
   return findNextIndex(operationCharacters[type], input) !== -1
+}
+function isEquation(input) {
+  return isOpGeneric('equation', input)
 }
 function isSubtraction(input) {
   return isOpGeneric('subtraction', input)
@@ -144,7 +155,7 @@ function isDivision(input) {
 function isMultiplication(input) {
   return isOpGeneric('multiplication', input)
 }
-function isExponent(input) {
+function isExponentiation(input) {
   return isOpGeneric('exponentiation', input)
 }
 function isParen(input) {

@@ -73,19 +73,6 @@ f({x:10})
 assert(f.y === 10)
 assert(f.z === 10)
 
-var f = parse('x = y^2 = z^3')
-f({y : 10})
-assert(f.x === Math.pow(10, 2))
-assert(f.z === Math.pow(10, 2/3))
-assert(Math.sqrt(f.x) === 10)
-
-var f = parse('x = y + 10 = z^2 - 20')
-f({z : 10})
-assert(f.x === (10*10 - 20)); assert(f.x === (f.z*f.z - 20))
-assert(f.z === Math.sqrt(f.x + 20))
-assert(f.y === 10*10 - 30); assert(f.y === f.z*f.z-30)
-assert(f.z === Math.sqrt(f.y + 30))
-
 
 
 
