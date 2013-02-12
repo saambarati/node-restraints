@@ -29,12 +29,12 @@ restraints is useful for creating a set of mathematical equations:
 
 ## string of equations
 
-    var f = parse('x = y = z')
+    var f = restraints('x = y = z')
     f({x:10})
     assert(f.y === 10)
     assert(f.z === 10)
 
-    var f = parse('x = y^2 = z^3')
+    var f = restraints('x = y^2 = z^3')
     f({y : 10})
     assert(f.x === Math.pow(f.y, 2))
     assert(f.z === Math.pow(f.y, 2/3))
