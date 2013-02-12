@@ -27,7 +27,7 @@ restraints is useful for creating a set of mathematical equations:
     equation({x:2, z:8})
     equation.y === 3 //2^3=8
 
-## strings of equations
+## string of equations
 
     var f = parse('x = y = z')
     f({x:10})
