@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "description": "restraint propagation",
   "main": "./parser.js",
-  "browserify" : "./parser.js"
+  "browserify" : "./parser.js",
   "scripts": {
     "test": "node ./test.js"
   },
